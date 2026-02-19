@@ -5,54 +5,40 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
-  workflow_dispatch:   # allows manual trigger from Actions tab
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: windows-latest   # or windows-2022 if you prefer a specific version
+    runs-on: windows-latest
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup MSVC environment
+    - name: Setup MSVC developer command prompt
       uses: ilammy/msvc-dev-cmd@v1
-      # This sets up the Visual Studio developer command prompt (cl.exe, etc.)
-
-    - name: Install Qt (minimal, with qmake)
-      uses: jurplel/install-qt-action@v4
       with:
-        version: '6.7.*'          # or 5.15.* / 6.5.* / whatever matches your needs
-        host: 'windows'
-        target: 'desktop'
-        arch: 'win64_msvc2019_64' # adjust if using MinGW or older MSVC
-        install-deps: 'true'
+        toolset: vs2022  # or leave default
 
     - name: Create build directory
       run: mkdir build
 
-    - name: Run qmake
+    - name: Compile and link (pure Win32, no Qt)
       working-directory: build
-      run: qmake ../keyLogger.pro -spec win32-msvc CONFIG+=release
+      shell: cmd
+      run: |
+        cl /nologo /EHsc /O2 /MD /std:c++17 /Zc:wchar_t /DNDEBUG ^
+          /DUNICODE /D_UNICODE ^
+          /W3 /wd4577 /wd4189 ^
+          ..\main.cpp ^
+          /link /NOLOGO /DYNAMICBASE /NXCOMPAT /OPT:REF /OPT:ICF ^
+          /SUBSYSTEM:WINDOWS ^
+          user32.lib shell32.lib gdi32.lib advapi32.lib ^
+          /OUT:keyLogger.exe
 
-    - name: Build with nmake (MSVC)
-      working-directory: build
-      run: nmake
-
-    # If using MinGW instead (change arch above to win64_mingw), use:
-    # - name: Build with mingw32-make
-    #   working-directory: build
-    #   run: mingw32-make
-
-    - name: Locate the executable
-      run: dir /s /b Release\KeyLogger.exe || dir /s /b keyLogger.exe || dir /s /b *.exe
-
-    - name: Upload build artifact
+    - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: KeyLogger-Release
-        path: |
-          build/Release/KeyLogger.exe
-          build/KeyLogger.exe
-          build/release/KeyLogger.exe   # sometimes Qt puts it here
-        if-no-files-found: warn
+        path: build/keyLogger.exe
+        if-no-files-found: error
