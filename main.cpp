@@ -4,6 +4,8 @@
 #include <string>
 #include <iostream>
 
+#define WM_TRAYICON (WM_USER + 1)
+
 HHOOK g_hook = NULL;
 std::ofstream g_logFile;
 NOTIFYICONDATA nid = {};
